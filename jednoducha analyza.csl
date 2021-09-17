@@ -1,0 +1,33 @@
+// 1
+// Jednoducha query ktera prochazi AAD signinlog a agreguje pocet radku dle ClientAppUsed pole
+SigninLogs 
+| project TimeGenerated, ClientAppUsed
+| summarize count() by ClientAppUsed
+
+// 2
+// Jednoducha query, ktera provadi agregaci nad time series db
+let startTime=ago(7day);
+let endTime=now();
+SigninLogs
+| make-series count(Location) default = 0 
+    on TimeGenerated in range (startTime,endTime,30m) 
+    by Location
+| render timechart
+
+// 2.1
+// Divny, jak vypada to casove okno?
+SigninLogs
+| where TimeGenerated between ( datetime(2020-12-10 2PM) .. datetime(2020-12-10 4PM) )
+| summarize count() by ResultType
+| order by count_
+
+// 2.2
+// Není tam vysoky rate fail loginu, mrknu kdo teda ma ty OK loginy
+SigninLogs
+| where TimeGenerated between ( datetime(2020-12-10 2PM) .. datetime(2020-12-10 4PM) )
+| summarize count() by Identity, AppDisplayName
+| order by count_, Identity, AppDisplayName
+
+// sucessfull sign ins
+SigninLogs
+| where ResultType in ("0", "50125", "50140", "70043", "70044")
